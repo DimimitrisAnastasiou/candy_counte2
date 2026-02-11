@@ -3,8 +3,8 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const countText = document.getElementById("count");
 
-const MODEL_ID = "object-counter-uxmrk/1";   // e.g. coco/1
-const API_KEY = "F6sOc6Q98Uh8GW2LTCva";
+const MODEL_ID = "YOUR_MODEL_ID";   // example: coco/1
+const API_KEY = "YOUR_API_KEY";
 
 // Start webcam
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -13,48 +13,46 @@ navigator.mediaDevices.getUserMedia({ video: true })
 })
 .catch(err => alert("Camera error: " + err));
 
-// Load Roboflow
-const rf = new Roboflow({
-    apiKey: API_KEY
-});
+// Create client
+const client = new inferencejs.InferenceJS();
+const modelWorkerId = "worker";
 
-rf.auth().then(() => {
-    rf.load({
-        model: MODEL_ID,
-        version: 1
-    }).then(model => {
+// Load model
+client.loadModel(
+    "https://detect.roboflow.com/" + MODEL_ID,
+    API_KEY
+).then(model => {
 
-        setInterval(async () => {
+    setInterval(async () => {
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
 
-            const predictions = await model.detect(canvas);
+        const predictions = await model.infer(canvas);
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(video, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0);
 
-            let count = 0;
+        let count = 0;
 
-            predictions.forEach(p => {
-                if (p.confidence > 0.5) {
-                    count++;
+        predictions.forEach(p => {
+            if (p.confidence > 0.5) {
+                count++;
 
-                    ctx.strokeStyle = "red";
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(
-                        p.x - p.width/2,
-                        p.y - p.height/2,
-                        p.width,
-                        p.height
-                    );
-                }
-            });
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(
+                    p.x - p.width/2,
+                    p.y - p.height/2,
+                    p.width,
+                    p.height
+                );
+            }
+        });
 
-            countText.innerText = "Count: " + count;
+        countText.innerText = "Count: " + count;
 
-        }, 1000); // every 1 sec
+    }, 1000);
 
-    });
 });
